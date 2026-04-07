@@ -29,9 +29,9 @@ public class CoffeeController {
 
    // Inside CoffeeController.java constructor
 public CoffeeController() {
-    planPricing.put("Latte Art Basics", 45.0);
-    planPricing.put("Espresso Extraction", 60.0);
-    planPricing.put("Coffee Roasting 101", 120.0);
+    planPricing.put("Basic", 5.0);
+    planPricing.put("Premium", 10.0);
+    planPricing.put("VIP", 20.0);
 
     masterData.addListener((ListChangeListener<Subscriber>) c -> {
         double total = masterData.stream().mapToDouble(Subscriber::getPrice).sum();
