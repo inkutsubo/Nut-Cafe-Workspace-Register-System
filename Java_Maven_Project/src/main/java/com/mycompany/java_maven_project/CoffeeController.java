@@ -52,23 +52,34 @@ public CoffeeController() {
         });
     }
 
-    public void addSubscriber(String name, String ageStr, String email, String plan) throws Exception {
-        if (name == null || name.isBlank()) throw new Exception("Name is required.");
-        if (email == null || !EMAIL_PATTERN.matcher(email).matches()) throw new Exception("Invalid email format.");
-        
-        int age;
-        try {
-            age = Integer.parseInt(ageStr.trim());
-        } catch (NumberFormatException e) {
-            throw new Exception("Age must be a whole number.");
-        }
-        if (age < 13 || age > 120) throw new Exception("Age must be between 13 and 120.");
-
-        double price = planPricing.getOrDefault(plan, 0.0);
-        masterData.add(new Subscriber(name, age, email, plan, LocalDate.now().plusMonths(1).toString(), price));
-        saveData();
+    public void addSubscriber(String name, String ageStr, String email, String plan, String duration) throws Exception {
+    if (name == null || name.isBlank()) throw new Exception("Name is required.");
+    if (email == null || !EMAIL_PATTERN.matcher(email).matches()) throw new Exception("Invalid email format.");
+    
+    int age;
+    try {
+        age = Integer.parseInt(ageStr.trim());
+    } catch (NumberFormatException e) {
+        throw new Exception("Age must be a whole number.");
     }
+    
+    if (age < 13 || age > 120) throw new Exception("Age must be between 13 and 120.");
 
+    // --- New Duration Logic ---
+    int monthsToAdd = switch (duration) {
+        case "6 Months" -> 6;
+        case "1 Year" -> 12;
+        default -> 1; // Default to 1 month
+    };
+
+    double basePrice = planPricing.getOrDefault(plan, 0.0);
+    double totalPrice = basePrice * monthsToAdd;
+    String expiryDate = LocalDate.now().plusMonths(monthsToAdd).toString();
+
+    masterData.add(new Subscriber(name, age, email, plan, expiryDate, totalPrice));
+    saveData();
+}
+    
     public void deleteSubscriber(Subscriber s) {
         if (s != null) {
             masterData.remove(s);
