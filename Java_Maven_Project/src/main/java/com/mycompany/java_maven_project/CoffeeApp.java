@@ -14,6 +14,7 @@ public class CoffeeApp extends Application {
     private final CoffeeShopUI ui = new CoffeeShopUI();
 
     // UI Inputs for Dashboard
+    
     private final TextField nameIn = new TextField();
     private final TextField ageIn = new TextField();
     private final TextField emailIn = new TextField();
@@ -21,7 +22,10 @@ public class CoffeeApp extends Application {
     private final ComboBox<String> durationIn = new ComboBox<>();
     private final TextField searchIn = new TextField();
     private final Label statusLabel = new Label(""); // Inline UX status
-
+    
+    //To Update
+    private Subscriber selectedSubscriber = null;
+    private final Button addBtn = new Button("Add Subscriber");
     @Override
     public void start(Stage stage) {
         controller.loadData();
@@ -48,7 +52,7 @@ public class CoffeeApp extends Application {
         ui.styleButton(loginBtn, "#6F4E37", true);
         loginBtn.setMaxWidth(Double.MAX_VALUE);
 
-        // Logic kiểm tra đăng nhập
+        // Logic kiểm tra đăng nhập_
         Runnable attemptLogin = () -> {
             if ("admin".equals(userIn.getText()) && "1234".equals(passIn.getText())) {
                 showDashboard(stage); // Đăng nhập thành công -> Mở Dashboard
@@ -198,13 +202,58 @@ public class CoffeeApp extends Application {
 
         TableColumn<Subscriber, String> expiryCol = new TableColumn<>("Expiry Date");
         expiryCol.setCellValueFactory(c -> c.getValue().expiryDateProperty());
+        expiryCol.setCellFactory(column -> new TableCell<>() {
+    @Override
+    protected void updateItem(String item, boolean empty) {
+        super.updateItem(item, empty);
 
+        if (item == null || empty) {
+            setText(null);
+            setStyle(""); // Reset style for empty cells
+        } else {
+            setText(item);
+            try {
+                java.time.LocalDate expiryDate = java.time.LocalDate.parse(item);
+                java.time.LocalDate today = java.time.LocalDate.now();
+                java.time.LocalDate warningPeriod = today.plusDays(7); // 3-day warning
+
+                if (expiryDate.isBefore(today) || expiryDate.isEqual(today)) {
+                    // Already expired - Bright Red
+                    setStyle("-fx-text-fill: white; -fx-background-color: #D9534F; -fx-font-weight: bold;");
+                } else if (expiryDate.isBefore(warningPeriod)) {
+                    // About to expire - Soft Red/Orange
+                    setStyle("-fx-text-fill: white; -fx-background-color: #E97451;");
+                } else {
+                    // Regular - Clear style
+                    setStyle("");
+                }
+            } catch (Exception e) {
+                setStyle(""); // If date format is weird, don't crash
+            }
+        }
+    }
+});
         TableColumn<Subscriber, String> priceCol = new TableColumn<>("Price");
         priceCol.setCellValueFactory(c -> Bindings.format("$%.2f", c.getValue().priceProperty()));
         priceCol.setMaxWidth(100);
 
         table.getColumns().addAll(nameCol, ageCol, emailCol, planCol, expiryCol, priceCol);
-
+        //Update
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+    if (newSelection != null) {
+        selectedSubscriber = newSelection;
+        // Transfer data to fields
+        nameIn.setText(newSelection.getName());
+        ageIn.setText(String.valueOf(newSelection.ageProperty().get()));
+        emailIn.setText(newSelection.getEmail());
+        planIn.setValue(newSelection.planProperty().get());
+        // Note: You might need to store duration in the Subscriber object 
+        // if you want to perfectly restore the duration ComboBox.
+        
+        addBtn.setText("Update Subscriber");
+        addBtn.setStyle("-fx-background-color: #2E8B57; -fx-text-fill: white; -fx-font-weight: bold;"); 
+    }
+});
         Button deleteBtn = new Button("Delete Selected");
         ui.styleButton(deleteBtn, "#D9534F", true);
         deleteBtn.disableProperty().bind(Bindings.isNull(table.getSelectionModel().selectedItemProperty()));
@@ -222,27 +271,39 @@ public class CoffeeApp extends Application {
 
 private void handleRegistration() {
     try {
-        // Pass the durationIn value to the controller
-        controller.addSubscriber(
-            nameIn.getText(), 
-            ageIn.getText(), 
-            emailIn.getText(), 
-            planIn.getValue(), 
-            durationIn.getValue()
-        );
+        if (selectedSubscriber == null) {
+            // Logic for NEW subscriber
+            controller.addSubscriber(nameIn.getText(), ageIn.getText(), emailIn.getText(), planIn.getValue(), durationIn.getValue());
+            showStatus("Success! Subscriber added ☕", "#2E8B57");
+        } else {
+            // Logic for UPDATING 
+            controller.updateSubscriber(
+                selectedSubscriber, 
+                nameIn.getText(), 
+                ageIn.getText(), 
+                emailIn.getText(), 
+                planIn.getValue(),
+                durationIn.getValue() // 
+            );
+            showStatus("Subscriber updated!", "#2E8B57");
+        }
         clearForm(true);
-        showStatus("Success! Subscriber added ☕", "#2E8B57");
     } catch (Exception ex) {
         showStatus("Oops: " + ex.getMessage(), "#D9534F");
     }
 }
 
 private void clearForm(boolean focusName) {
+    selectedSubscriber = null; // Reset selection
     nameIn.clear(); 
     ageIn.clear(); 
     emailIn.clear();
     planIn.setValue(controller.getAvailablePlans().get(0));
-    durationIn.setValue("1 Month"); // Reset duration
+    durationIn.setValue("1 Month");
+    
+    addBtn.setText("Add Subscriber"); // Reset button text
+    ui.styleButton(addBtn, "#6F4E37", true); // Reset style
+    
     if (focusName) nameIn.requestFocus();
 }
 
