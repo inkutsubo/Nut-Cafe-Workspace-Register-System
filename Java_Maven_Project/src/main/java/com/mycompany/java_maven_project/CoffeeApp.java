@@ -18,6 +18,7 @@ public class CoffeeApp extends Application {
     private final TextField ageIn = new TextField();
     private final TextField emailIn = new TextField();
     private final ComboBox<String> planIn = new ComboBox<>();
+    private final ComboBox<String> durationIn = new ComboBox<>();
     private final TextField searchIn = new TextField();
     private final Label statusLabel = new Label(""); // Inline UX status
 
@@ -127,47 +128,47 @@ public class CoffeeApp extends Application {
     }
 
     private VBox createSidebarForm() {
-        ui.styleInput(nameIn); nameIn.setPromptText("e.g. Alex Bean");
-        ui.styleInput(ageIn); ageIn.setPromptText("e.g. 24");
-        ui.styleInput(emailIn); emailIn.setPromptText("alex@nutcafe.com");
+    ui.styleInput(nameIn);
+    ui.styleInput(ageIn);
+    ui.styleInput(emailIn);
 
-        planIn.getItems().clear();
-        planIn.getItems().addAll(controller.getAvailablePlans());
-        planIn.setValue(controller.getAvailablePlans().get(0));
-        planIn.setMaxWidth(Double.MAX_VALUE);
-        planIn.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #EADDCC; -fx-border-radius: 6; -fx-padding: 4;");
+    // Setup Plan ComboBox
+    planIn.getItems().setAll(controller.getAvailablePlans());
+    planIn.setValue(controller.getAvailablePlans().get(0));
+    planIn.setMaxWidth(Double.MAX_VALUE);
 
-        Button addBtn = new Button("Add Subscriber");
-        ui.styleButton(addBtn, "#6F4E37", true); 
-        addBtn.setMaxWidth(Double.MAX_VALUE);
-        addBtn.setOnAction(e -> handleRegistration());
+    // --- New: Setup Duration ComboBox ---
+    durationIn.getItems().setAll("1 Month", "6 Months", "1 Year");
+    durationIn.setValue("1 Month");
+    durationIn.setMaxWidth(Double.MAX_VALUE);
+    durationIn.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #EADDCC; -fx-border-radius: 6; -fx-padding: 4;");
 
-        Button clearBtn = new Button("Clear");
-        ui.styleButton(clearBtn, "#EADDCC", false); 
-        clearBtn.setMaxWidth(Double.MAX_VALUE);
-        clearBtn.setOnAction(e -> clearForm(false));
+    Button addBtn = new Button("Add Subscriber");
+    ui.styleButton(addBtn, "#6F4E37", true); 
+    addBtn.setOnAction(e -> handleRegistration());
 
-        HBox btnGroup = new HBox(10, addBtn, clearBtn);
-        HBox.setHgrow(addBtn, Priority.ALWAYS);
-        HBox.setHgrow(clearBtn, Priority.ALWAYS);
-        addBtn.setMaxWidth(Double.MAX_VALUE); clearBtn.setMaxWidth(Double.MAX_VALUE);
+    Button clearBtn = new Button("Clear");
+    ui.styleButton(clearBtn, "#EADDCC", false); 
+    clearBtn.setOnAction(e -> clearForm(false));
 
-        statusLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
-        statusLabel.setWrapText(true);
+    HBox btnGroup = new HBox(10, addBtn, clearBtn);
+    HBox.setHgrow(addBtn, Priority.ALWAYS);
+    HBox.setHgrow(clearBtn, Priority.ALWAYS);
 
-        VBox form = new VBox(15,
-            ui.createFieldGroup("Full Name", nameIn),
-            ui.createFieldGroup("Age", ageIn),
-            ui.createFieldGroup("Email Address", emailIn),
-            ui.createFieldGroup("Subscription Plan", planIn),
-            new Region(),
-            btnGroup,
-            statusLabel
-        );
-        form.setPrefWidth(320);
-        return ui.createCard("New Registration", form);
-    }
-
+    VBox form = new VBox(15,
+        ui.createFieldGroup("Full Name", nameIn),
+        ui.createFieldGroup("Age", ageIn),
+        ui.createFieldGroup("Email Address", emailIn),
+        ui.createFieldGroup("Subscription Plan", planIn),
+        ui.createFieldGroup("Duration", durationIn), // Added here
+        new Region(),
+        btnGroup,
+        statusLabel
+    );
+    form.setPrefWidth(320);
+    return ui.createCard("New Registration", form);
+}
+    
     private VBox createMainContent() {
         ui.styleInput(searchIn);
         searchIn.setPromptText("Search community by name or email...");
@@ -219,21 +220,31 @@ public class CoffeeApp extends Application {
         return ui.createCard("Active Community", content);
     }
 
-    private void handleRegistration() {
-        try {
-            controller.addSubscriber(nameIn.getText(), ageIn.getText(), emailIn.getText(), planIn.getValue());
-            clearForm(true);
-            showStatus("Success! Subscriber added ☕", "#2E8B57");
-        } catch (Exception ex) {
-            showStatus("Oops: " + ex.getMessage(), "#D9534F");
-        }
+private void handleRegistration() {
+    try {
+        // Pass the durationIn value to the controller
+        controller.addSubscriber(
+            nameIn.getText(), 
+            ageIn.getText(), 
+            emailIn.getText(), 
+            planIn.getValue(), 
+            durationIn.getValue()
+        );
+        clearForm(true);
+        showStatus("Success! Subscriber added ☕", "#2E8B57");
+    } catch (Exception ex) {
+        showStatus("Oops: " + ex.getMessage(), "#D9534F");
     }
+}
 
-    private void clearForm(boolean focusName) {
-        nameIn.clear(); ageIn.clear(); emailIn.clear();
-        planIn.setValue(controller.getAvailablePlans().get(0));
-        if (focusName) nameIn.requestFocus();
-    }
+private void clearForm(boolean focusName) {
+    nameIn.clear(); 
+    ageIn.clear(); 
+    emailIn.clear();
+    planIn.setValue(controller.getAvailablePlans().get(0));
+    durationIn.setValue("1 Month"); // Reset duration
+    if (focusName) nameIn.requestFocus();
+}
 
     private void showStatus(String message, String colorCode) {
         statusLabel.setText(message);
