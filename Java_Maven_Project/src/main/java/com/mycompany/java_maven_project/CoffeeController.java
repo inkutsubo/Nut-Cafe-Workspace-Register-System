@@ -80,6 +80,37 @@ public CoffeeController() {
     saveData();
 }
     
+
+public void updateSubscriber(Subscriber s, String name, String ageStr, String email, String plan, String duration) throws Exception {
+    if (name == null || name.isBlank()) throw new Exception("Name is required.");
+    
+    int age;
+    try {
+        age = Integer.parseInt(ageStr.trim());
+    } catch (NumberFormatException e) {
+        throw new Exception("Age must be a number.");
+    }
+//expiry
+    int monthsToAdd = switch (duration) {
+        case "6 Months" -> 6;
+        case "1 Year" -> 12;
+        default -> 1;
+    };
+
+
+    String newExpiry = java.time.LocalDate.now().plusMonths(monthsToAdd).toString();
+    double newPrice = planPricing.getOrDefault(plan, 0.0) * monthsToAdd;
+
+    // 3. Update the Subscriber properties 
+    s.nameProperty().set(name);
+    s.ageProperty().set(age);
+    s.emailProperty().set(email);
+    s.planProperty().set(plan);
+    s.expiryDateProperty().set(newExpiry); 
+    s.priceProperty().set(newPrice);
+
+    saveData(); // Persist to CSV
+}
     public void deleteSubscriber(Subscriber s) {
         if (s != null) {
             masterData.remove(s);
